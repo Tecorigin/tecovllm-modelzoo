@@ -1,0 +1,184 @@
+import json
+import os
+import re
+import argparse
+import subprocess
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--module_dir', type=str, help='path of the module')
+    args = parser.parse_args()
+    return args
+
+
+def get_paths(module_dir, file_type):
+    missing=[]
+    file_paths = []
+    for root, dirs, files in os.walk(module_dir):
+        if root.count(os.sep) == 3:
+            if file_type not in files and ("PaddlePaddle" in root or "PyTorch" in root):
+                missing.append(root)
+            else:
+                for file in files:
+                    if file==file_type:
+                        file_paths.append(os.path.join(root, file_type))
+    return file_paths,missing
+
+
+def get_module_dir(cmd):
+    files = run_cmd(cmd)
+    module_type_list = ["Classification", "InformationExtraction",
+                        "OCR", "Detection", "SpeechRecognition"]
+    module_name = None
+    flag = 0
+    for file in files:
+        for module_type in module_type_list:
+            if module_type in file:
+                file_list = file.split("/")
+                module_name = "/".join(
+                    file_list[:file_list.index(module_type)+2])
+                flag = 1
+                break
+        if flag:
+            break
+    return module_name
+
+
+def run_cmd(cmd):
+    results = subprocess.run(cmd, stdout=subprocess.PIPE,
+                             shell=True).stdout.decode('utf-8').split("\n")
+    return results
+
+
+def get_sdaa_software_ver(d, software,type):
+    dict = {}
+    pattern = r"(\d+\.\d+\.\d+)"
+    for s in software:
+        version = re.search(pattern, d["ubuntu"][type][s])
+        dict[s] = version.group(1)
+    return dict
+
+
+def check_dockerfile(file_path, dependencies):
+    with open(file_path, 'r') as f:
+        dockerfile_content = f.read()
+
+    match = re.search(r'ARG FROM_IMAGE_NAME\s*=\s*(.+)', dockerfile_content)
+    if not match:
+        print(f"No docker image info in {file_path}")
+        return False
+    docker_image_version = match.group(1)
+    if "PaddlePaddle" in file_path:
+        if docker_image_version not in dependencies['ubuntu']['paddle']["docker_image"]:
+            print(
+                f'Wrong docker image version in {file_path}')
+            return False
+    elif "PyTorch" in file_path:
+        if docker_image_version not in dependencies['ubuntu']['pytorch']["docker_image"]:
+            print(
+                f'Wrong docker image version in {file_path}')
+            return False
+    return True
+
+
+def check_readme(file_path, dependencies):
+    flag = 1
+    with open(file_path, 'r') as f:
+        readme_content = f.read()
+    pt_software = ["pytorch_sdaa", "sdaadriver",
+                "sdaart", "tccl", "dnn", "blas"]
+    pd_software = ["paddle_sdaa", "sdaadriver",
+                "sdaart", "tccl", "dnn", "blas"]
+
+    if "PaddlePaddle" in file_path:
+        dict = get_sdaa_software_ver(dependencies, pd_software,"paddle")
+        start = readme_content.find("版本信息")
+        substring = readme_content[start:start+500]
+        pd_software_version = re.findall(
+                r"\d+\.\d+\.\d+", substring)[:6]
+
+        if len(pd_software_version)<6:
+            print(f"Some version info Missing in {file_path}")
+            flag=0
+        else:
+            paddle_s2v_dict={}
+            for index,s in enumerate(pd_software):
+                paddle_s2v_dict[s]=pd_software_version[index]
+            for k,v in paddle_s2v_dict.items():
+                if v!= dict[k]:
+                    print(f"Wrong version of {k} in {file_path}")
+                    flag = 0
+
+    if "PyTorch" in file_path:
+        dict = get_sdaa_software_ver(dependencies, pt_software,"pytorch")
+        start = readme_content.find("版本信息")
+
+        substring = readme_content[start:start+500]
+        pt_software_version = re.findall(
+                r"\d+\.\d+\.\d+", substring)[:6]
+        if len(pt_software_version)<6:
+            print(f"miss some version info in {file_path}")
+            flag=0
+        else:
+            pt_s2v_dict={}
+            for index,s in enumerate(pt_software):
+                pt_s2v_dict[s]=pt_software_version[index]
+
+            for k,v in pt_s2v_dict.items():
+                if v!= dict[k]:
+                    print(f"Wrong version of {k} in {file_path}")
+                    flag = 0
+    return flag
+
+def check_new_directory():
+    # 获取git diff
+    cmd1="git ls-tree -r --name-only HEAD~1 | grep -E '^(PaddlePaddle|PyTorch)/[^/]+/[^/]+/[^/]+' | awk -F'/' '{print $1 \"/\" $2 \"/\" $3}' | sort | uniq"
+    result = subprocess.check_output(cmd1, shell=True, stderr=subprocess.STDOUT)
+    prev_dir = set(result.decode('utf-8').split('\n')[:-1])
+
+
+    cmd2="git ls-tree -r --name-only HEAD | grep -E '^(PaddlePaddle|PyTorch)/[^/]+/[^/]+/[^/]+' | awk -F'/' '{print $1 \"/\" $2 \"/\" $3}' | sort | uniq"
+    result = subprocess.check_output(cmd2, shell=True, stderr=subprocess.STDOUT)
+    cur_dir = set(result.decode('utf-8').split('\n')[:-1])
+    return cur_dir-prev_dir
+
+
+def check_dependencies():
+    if check_new_directory():
+        return 0
+    flag=0
+    module_dir = "."
+    dependencies_file = os.path.join(os.getcwd(), '.dependencies.json')
+    if not os.path.isfile(dependencies_file):
+        print('Missing .dependencies.json file')
+        return 1
+
+    with open(dependencies_file, 'r') as f:
+        dependencies = json.load(f)
+
+    dockerfile_paths,dockerfile_missing = get_paths(module_dir, "Dockerfile")
+    if dockerfile_missing:
+        for dir in dockerfile_missing:
+            print(f"Dockerfile not found in {dir}")
+            flag=1
+    readme_paths,readme_missing = get_paths(module_dir, "README.md")
+    if readme_missing:
+        for dir in readme_missing:
+            print(f"README.md not found in {dir}")
+            flag=1
+    for file_path in dockerfile_paths:
+        if not check_dockerfile(file_path, dependencies):
+            print("="*40)
+            flag=1
+    for file_path in readme_paths:
+        if not check_readme(file_path, dependencies):
+            print("="*40)
+            flag=1
+    return flag
+
+
+
+
+if __name__ == '__main__':
+    exit(check_dependencies())

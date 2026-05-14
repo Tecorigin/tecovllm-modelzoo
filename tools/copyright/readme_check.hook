@@ -1,0 +1,52 @@
+import os
+import re
+
+README_FILENAME = "README.md"
+README_CN_FILENAME = "README_CN.md"
+
+README_CONTENT="""
+## Disclaimer
+ModelZoo only provides download links for public Data Sets, These public data sets do not belong to ModelZoo, and ModelZoo is not responsible for their quality or maintenance. Make sure you have a license to use these datasets. Models based on these datasets can only be used for non-commercial research and education.
+
+To the dataset owner:
+
+If you do not want your dataset to be published on ModelZoo or want to update your dataset in ModelZoo, Please file an issue in Github/Gitee, We will delete or update your dataset based on your issue. Thank you for your understanding and contributions to our community."""
+
+README_CN_CONTENT="""
+## 免责声明
+ModelZoo仅提供公共数据集的下载链接。这些公共数据集不属于ModelZoo, ModelZoo也不对其质量或维护负责。请确保您具有这些数据集的使用许可。基于这些数据集的模型仅可用于非商业研究和教育。
+
+致数据集所有者：
+
+如果您不希望您的数据集公布在ModelZoo上或希望更新ModelZoo中属于您的数据集，请在Github/Gitee中提交issue,我们将根据您的issue删除或更新您的数据集。衷心感谢您对我们社区的理解和贡献。"""
+
+def check_file(filename):
+    with open(filename, "r") as f:
+        content=f.read()
+        a=re.search(fr'{README_CN_CONTENT}', content)
+        b=re.search(fr'{README_CONTENT}', content)
+        if a is None and b is None:
+            print(f"Error: {filename} does not contain required Disclaimer")
+            return False
+    return True
+
+def get_modelzoo_dir():
+    current_dir=os.path.dirname(os.path.abspath(__file__))
+    while True:
+        parent_dir = os.path.dirname(current_dir)
+        if parent_dir.split("/")[-1] == "teco-modelzoo":
+            current_dir = parent_dir
+            break
+        current_dir = parent_dir
+    return current_dir
+
+def main():
+#    modelzoo_dir=get_modelzoo_dir()
+#
+#    if not check_file(os.path.join(modelzoo_dir, README_FILENAME)):
+#        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    exit(main())

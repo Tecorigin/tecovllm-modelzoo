@@ -1,0 +1,73 @@
+repos:
+
+# 检查py/c/c++文件中的LICENSE声明
+-   repo: local
+    hooks:
+    -   id: file-check
+        name: Check for PY/C/C++ File License
+        entry: python tools/copyright/file_check.hook
+        language: system
+        stages: [commit]
+        pass_filenames: false
+
+# 检查LICENSE和NOTICE
+-   repo: local
+    hooks:
+    -   id: license-check
+        name: Check for LICENSE and NOTICE
+        entry: python tools/copyright/license_check.hook
+        language: system
+        stages: [commit]
+        pass_filenames: false
+
+# 检查README中的免责声明
+-   repo: local
+    hooks:
+    -   id: readme-check
+        name: Check for README
+        entry: python tools/copyright/readme_check.hook
+        language: system
+        stages: [commit]
+        pass_filenames: false
+
+
+# Dockefile镜像版本对齐，README补充版本信息
+# -   repo: local
+#     hooks:
+#     -   id: check-dependencies
+#         name: Check Project Dependencies
+#         entry: python tools/dependencies/check_dependencies.hook
+#         language: system
+#         stages: [commit]
+#         pass_filenames: false
+
+
+# 检查module中的py文件是否包含pdb以及breakpoint
+# -   repo: local
+#     hooks:
+#     -   id: check-python-debug-usage
+#         name: Check Python Debug Usage
+#         entry: python tools/module/check_debug_usage.hook
+#         language: system
+#         stages: [commit]
+#         pass_filenames: false
+
+# # 检查module中的py文件是否包含绝对路径
+# -   repo: local
+#     hooks:
+#     -   id: check-absolute-path
+#         name: Check Absolute Path
+#         entry: python tools/module/check_absolute_path.hook
+#         language: system
+#         stages: [commit]
+#         pass_filenames: false
+
+# 检查新增py文件是否包含swai关键字
+# -   repo: local
+#     hooks:
+#     -   id: check-swai-string
+#         name: Check SWAI String Usage
+#         entry: python tools/module/check_swai.hook
+#         language: system
+#         stages: [commit]
+#         pass_filenames: false
