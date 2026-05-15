@@ -23,7 +23,7 @@ def get_modelzoo_dir():
     current_dir=os.path.dirname(os.path.abspath(__file__))
     while True:
         parent_dir = os.path.dirname(current_dir)
-        if parent_dir.split("/")[-1] == "teco-modelzoo":
+        if parent_dir.split("/")[-1] == "teco-modelzoo_lm":
             current_dir = parent_dir
             break
         current_dir = parent_dir

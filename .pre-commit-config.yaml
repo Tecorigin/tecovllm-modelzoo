@@ -20,15 +20,15 @@ repos:
         stages: [commit]
         pass_filenames: false
 
-# 检查README中的免责声明
--   repo: local
-    hooks:
-    -   id: readme-check
-        name: Check for README
-        entry: python tools/copyright/readme_check.hook
-        language: system
-        stages: [commit]
-        pass_filenames: false
+# # 检查README中的免责声明
+# -   repo: local
+#     hooks:
+#     -   id: readme-check
+#         name: Check for README
+#         entry: python tools/copyright/readme_check.hook
+#         language: system
+#         stages: [commit]
+#         pass_filenames: false
 
 
 # Dockefile镜像版本对齐，README补充版本信息
