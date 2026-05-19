@@ -123,7 +123,7 @@ Python代码遵循[PEP8](https://peps.python.org/pep-0008/)规范。提交PR之�
 提交PR时注意以下事项：
 
 - 目标分支选择`tecorigin/modelzoo:main`。
-- PR标题：PR标题需要标注开发者及适配的内容，例如：**【生态活动】元碁智汇·定义未来-团队名称-模型推理-在TecoInferenceEngine框架上适配ResNet50模型**。
+- PR标题：PR标题需要标注开发者及适配的内容，例如：**【生态活动】元碁智汇·定义未来-团队名称-模型推理-在TecovLLM框架上适配Seed-OSS-36B-Instruct模型**。
 - PR说明：PR说明应当包含以下内容。
 
   * 当前适配的软件栈版本：在Docker环境中执行`vllm`命令即可打印当前软件栈版本，以截图的方式提供即可。
