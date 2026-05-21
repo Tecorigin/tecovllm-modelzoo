@@ -19,7 +19,7 @@
 
 ### 1.1 检查模型文件名及路径规范
 
-您提交的模型路径应当为:`TecovLLM/models`。请参考该格式创建目录，并将模型文件放在该目录下。
+您提交的模型路径应当为:`TecovLLM/models/{模型名称}`。请参考该格式创建目录，并将模型文件放在该目录下。
 
 - 模型文件名称：模型文件名称必须严格按照模型权重`config.json`配置文件中的 `model_type`参数值命名，命名格式为：`{model_type}.py`
 
@@ -118,11 +118,11 @@ Python代码遵循[PEP8](https://peps.python.org/pep-0008/)规范。提交PR之�
 
 ## 2. 提交PR
 
-基于您开发环境的Tecorgin Modelzoo仓库，新建Pull Requests提交内容。关于如何Fork仓库及提交Pull Request，请查阅github官方使用文档：[About pull requests - GitHub Docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests?versionId=free-pro-team%40latest&productId=get-started&restPage=using-github)
+基于您开发环境的TecovLLM-ModelZoo仓库，新建Pull Requests提交内容。关于如何Fork仓库及提交Pull Request，请查阅github官方使用文档：[About pull requests - GitHub Docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests?versionId=free-pro-team%40latest&productId=get-started&restPage=using-github)
 
 提交PR时注意以下事项：
 
-- 目标分支选择`tecorigin/modelzoo:main`。
+- 目标分支选择`tecorigin/tecovllm-modelzoo:main`。
 - PR标题：PR标题需要标注开发者及适配的内容，例如：**【生态活动】元碁智汇·定义未来-团队名称-模型推理-在TecovLLM框架上适配Seed-OSS-36B-Instruct模型**。
 - PR说明：PR说明应当包含以下内容。
 
