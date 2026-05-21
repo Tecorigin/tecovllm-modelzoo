@@ -11,16 +11,16 @@ TecovLLM-ModelZoo专注完成各类外部模型适配工作，统一存放模型
 
 您可以将各类模型迁移到本仓库实现vLLM推理。适配流程图如下：
 
-![TecovLLM大模型推理全流程适配](./doc/学习地图_大模型推理.jpg)
+![TecovLLM大模型推理全流程适配](./TecovLLM/doc/学习地图_大模型推理.jpg)
 
-详细信息，请参考[模型适配指南](./doc/模型适配指南.md)。
+详细信息，请参考[模型适配指南](./TecovLLM/doc/模型适配指南.md)。
 
 ## 模型推理开发示例列表
 
 
 | 模型                                                              | 推理卡数 | 精度模式 |
 | ----------------------------------------------------------------- | -------- | -------- |
-| [Seed-OSS-36B-Instruct](./TecovLLM//models/Seed-OSS-36B-Instruct/README.md) | 两卡     | FP16     |
+| [Seed-OSS-36B-Instruct](./TecovLLM/models/Seed-OSS-36B-Instruct/README.md) | 两卡     | FP16     |
 
 ## 免责声明
 
