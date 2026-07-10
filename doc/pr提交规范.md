@@ -20,19 +20,7 @@
 - [ ] 注释与 License 声明
 - [ ] （可选）代码优化
 
-### 1.1 检查模型文件名及路径规范
-
-模型文件路径必须遵循如下格式：
-
-```
-TecovLLM/models/{模型名称}/
-```
-
-**模型文件名**：严格按照模型权重 `config.json` 文件中 `model_type` 参数的值来命名，格式为 `{model_type}.py`。
-
-> **示例**：Step-3.5-Flash 模型的 `config.json` 中 `model_type` 为 `step3p5`，则模型文件路径为 `TecovLLM/models/step3p5.py`。
-
-### 1.2 检查功能实现
+### 1.1 检查功能实现
 
 提交的内容必须通过以下两项验证：
 
@@ -41,7 +29,7 @@ TecovLLM/models/{模型名称}/
 | **推理服务验证** | 按适配指南替换模型文件后，TecovLLM 服务可正常启动，单样本推理请求返回正常结果 |
 | **精度验证** | 在太初提供的 Docker 环境中，使用 TecovLLM 服务的 OpenAI 接口对 Evalscope 标准测试数据集完成推理，精度符合要求 |
 
-### 1.3 检查注释及 License 声明
+### 1.2 检查注释及 License 声明
 
 #### 注释要求
 
@@ -116,7 +104,7 @@ TecovLLM/models/{模型名称}/
 > - C/C++：`// Adapted to tecorigin hardware`
 > - Python：`# Adapted to tecorigin hardware`
 
-### 1.4 （可选）优化代码
+### 1.3 （可选）优化代码
 
 Python 代码请遵循 [PEP8](https://peps.python.org/pep-0008/) 规范。提交 PR 前，请完整检查代码，确认是否有可以进一步优化的部分（例如删除无关代码等）。可使用 [pylint](https://www.pylint.org/) 等格式化工具统一代码风格。
 
@@ -159,6 +147,6 @@ PR 说明中应包含以下内容：
 | **软件栈版本** | 在 Docker 环境中执行 `vllm` 命令，以截图方式提供输出的软件版本信息 |
 | **源码参考** | 提供源码参考链接及对应的 commit id 或 tag；如无参考源码，请说明原因 |
 | **工作目录** | 适配内容的目录结构 |
-| **适配内容** | 参考 §1.2 功能实现章节，说明适配了哪些功能 |
+| **适配内容** | 参考 §1.1 功能实现章节，说明适配了哪些功能 |
 | **结果展示** | 包含功能实现中各验证项的测试结果（截图） |
 | **README 自测结果** | 确认 README 已通过自测，非开发者也能够按 README 复现此次 PR 的内容 |
