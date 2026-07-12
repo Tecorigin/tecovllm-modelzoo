@@ -1,0 +1,15 @@
+
+# python env
+__pycache__/
+
+# C extensions
+*.so
+*.whl
+*.tar
+
+nohup.out
+
+core.*
+*egg-info
+
+build
