@@ -6,7 +6,7 @@ Qwen3 是阿里通义千问团队推出的新一代开源大语言模型系列�
 
 ## 模型权重下载
 
-执行以下命令，从 ModelScope 下载模型权重文件：
+模型权重从 ModelScope 下载：
 
 ```bash
 modelscope download --model Qwen/Qwen3-0.6B --local_dir ./Qwen3-0.6B
@@ -14,13 +14,13 @@ modelscope download --model Qwen/Qwen3-0.6B --local_dir ./Qwen3-0.6B
 
 ## 模型注册
 
-模型注册流程请参考[模型适配指南第 2 节](../../doc/模型适配指南.md#2-模型适配)。在 `tecovllm_modelzoo` 目录下编译并安装插件即可：
+在 `tecovllm_modelzoo` 目录下编译安装：
 
 ```bash
 python setup.py bdist_wheel
 ```
 
-或使用开发模式免去每次修改后重复编译：
+或使用开发模式：
 
 ```bash
 python setup.py develop
@@ -28,7 +28,7 @@ python setup.py develop
 
 ## 启动推理服务
 
-执行以下命令启动 vLLM 推理服务：
+vLLM 推理服务启动命令：
 
 ```bash
 vllm serve Qwen3-0.6B \
@@ -43,44 +43,15 @@ vllm serve Qwen3-0.6B \
 
 | 平台 | 数据集 | 指标 | Subset | Num | Score |
 |------|--------|------|--------|-----|-------|
-| CUDA（基准） | mmlu_pro | mean_acc | default | 12032 | **0.XXXX** |
-| **SDAA（太初）** | mmlu_pro | mean_acc | default | 12032 | **0.XXXX** |
+| CUDA（基准） | mmlu_pro | mean_acc | computer science | 12032 | **0.XXXX** |
+| **SDAA（太初）** | mmlu_pro | mean_acc | computer science | 12032 | **0.XXXX** |
 
-> 精度对比结果：SDAA 精度与 CUDA 基准精度误差在 ±2% 以内，符合精度达标要求。
+> mmlu_pro 数据集 SDAA 得分在 CUDA 基线 ±0.05 以内，符合要求。
 
 ## 性能验证
 
-```
-Benchmarking summary:
-+-----------------------------------+-----------+
-| Key                               |     Value |
-+===================================+===========+
-| Time taken for tests (s)          |    X.XXXX |
-+-----------------------------------+-----------+
-| Number of concurrency             |    1      |
-+-----------------------------------+-----------+
-| Total requests                    |    1      |
-+-----------------------------------+-----------+
-| Succeed requests                  |    1      |
-+-----------------------------------+-----------+
-| Failed requests                   |    0      |
-+-----------------------------------+-----------+
-| Output token throughput (tok/s)   |   XX.XXXX |
-+-----------------------------------+-----------+
-| Total token throughput (tok/s)    |   XX.XXXX |
-+-----------------------------------+-----------+
-| Request throughput (req/s)        |    X.XXXX |
-+-----------------------------------+-----------+
-| Average latency (s)               |    X.XXXX |
-+-----------------------------------+-----------+
-| Average time to first token (s)   |    X.XXXX |
-+-----------------------------------+-----------+
-| Average time per output token (s) |    X.XXXX |
-+-----------------------------------+-----------+
-| Average inter-token latency (s)   |    X.XXXX |
-+-----------------------------------+-----------+
-| Average input tokens per request  | 2048      |
-+-----------------------------------+-----------+
-| Average output tokens per request |  200      |
-+-----------------------------------+-----------+
-```
+| 测试场景 | 输入长度 | 输出长度 | 并发数 | TTFT (ms) | TPOT (ms) |
+|----------|----------|----------|--------|-----------|-----------|
+| T1 — 长文本串行 | 64K | 200 | 1 | X.XX | X.XX |
+| T2 — 超长文本串行 | 120K | 200 | 1 | X.XX | X.XX |
+| T3 — 短文本高并发 | 1K | 200 | 32 | X.XX | X.XX |

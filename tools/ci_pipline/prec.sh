@@ -80,14 +80,14 @@ case "$MODEL_NAME" in
             || rc=1
         ;;
     InternVL3_5-8B)
-        # run_eval "mmlu_pro" \
-        #     '{"mmlu_pro": {"subset_list": ["computer science"]}}' \
-        #     'do_sample=true,temperature=0.6' \
-        #     || rc=1
-        run_eval "mmmu_pro" \
-            '{"mmmu_pro": {"subset_list": ["Accounting"]}}' \
+        run_eval "mmlu_pro" \
+            '{"mmlu_pro": {"subset_list": ["computer science"]}}' \
             'do_sample=true,temperature=0.6' \
             || rc=1
+        # run_eval "mmmu_pro" \
+        #     '{"mmmu_pro": {"subset_list": ["Accounting"]}}' \
+        #     'do_sample=true,temperature=0.6' \
+        #     || rc=1
         ;;
     gemma-4-12B-it)
         run_eval "mmlu_pro" \
