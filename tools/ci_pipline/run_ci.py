@@ -2,7 +2,7 @@
 """run_ci.py — CI 自动化流程：起服务 → 精度 → 性能 → 提取结果
 
 用法: python run_ci.py <run.sh路径> [--keep-service]
-  run.sh: 启动 vLLM 服务的脚本，需包含 --served-model-name 和 --port
+  run.sh: 启动 vLLM 服务的脚本，必须包含 --no-enable-prefix-caching 和 --trust-remote-code
 """
 
 import argparse
@@ -21,18 +21,22 @@ from result_analyse import parse_precision_dir, parse_performance_dir
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+import epi_eval
 
-SUPPORTED_MODELS = {"Hy-MT2-1.8B", "MiniCPM5-1B", "InternVL3_5-8B", "gemma-4-12B-it"}
+SUPPORTED_MODELS = {"Intern-S2-Preview", "OneGenomeRice"}
 
 
 def parse_run_sh(path: str) -> dict:
-    """从 run.sh 解析 --served-model-name、模型路径、--port、--host（跳过注释行）"""
     lines = Path(path).read_text().split("\n")
-    # 去除注释行（# 开头的行）
-    active = "\n".join(
-        l for l in lines if not l.strip().startswith("#")
-    )
+    active = "\n".join(l for l in lines if not l.strip().startswith("#"))
     content = active
+
+    # 校验必须包含的参数
+    for flag in ["--no-enable-prefix-caching", "--trust-remote-code"]:
+        if flag not in content:
+            raise ValueError(f"run.sh 中必须包含 {flag} 参数")
 
     model_name = None
     m = re.search(r"--served-model-name\s+(\S+)", content)
@@ -62,7 +66,6 @@ def parse_run_sh(path: str) -> dict:
 
 
 def wait_service(host: str, port: int, timeout: int = 600) -> bool:
-    """轮询 /health 直到 200，超时抛异常"""
     url = f"http://{host}:{port}/health"
     print(f"等待服务就绪: {url}  (最长 {timeout}s)")
     deadline = time.time() + timeout
@@ -80,7 +83,6 @@ def wait_service(host: str, port: int, timeout: int = 600) -> bool:
 
 
 def run_cmd(args, cwd=None):
-    """运行命令，实时输出，失败直接抛异常"""
     print(f"\n>>> {' '.join(args)}")
     p = subprocess.run(args, cwd=cwd or SCRIPT_DIR)
     if p.returncode != 0:
@@ -88,7 +90,6 @@ def run_cmd(args, cwd=None):
 
 
 def stop_service(proc):
-    """停止 vLLM 进程及其所有子进程"""
     try:
         pgid = os.getpgid(proc.pid)
         os.killpg(pgid, signal.SIGTERM)
@@ -107,13 +108,11 @@ def stop_service(proc):
 
 
 def find_latest_log(pattern: str) -> Path | None:
-    """找最新匹配的日志目录"""
     dirs = sorted(SCRIPT_DIR.glob(pattern))
     return dirs[-1] if dirs else None
 
 
 def compare_precision(model_name: str, results: dict) -> None:
-    """对比精度结果与基线，不达标直接抛异常"""
     baseline_path = SCRIPT_DIR / "precision_baseline.json"
     if not baseline_path.exists():
         print("未找到 precision_baseline.json，跳过精度对比")
@@ -146,7 +145,7 @@ def compare_precision(model_name: str, results: dict) -> None:
 # ============================================================
 def main():
     parser = argparse.ArgumentParser(description="CI 自动化：起服务 → 精度 → 性能 → 提取结果")
-    parser.add_argument("run_sh", help="启动 vLLM 服务的脚本路径（如 model_adaptations/team1/run.sh）")
+    parser.add_argument("run_sh", help="启动 vLLM 服务的脚本路径")
     parser.add_argument("--keep-service", action="store_true", help="测试完成后保留 vLLM 服务不关闭")
     args = parser.parse_args()
 
@@ -154,7 +153,6 @@ def main():
     keep_service = args.keep_service
 
     info = parse_run_sh(run_sh_path)
-
     model_name = info["model_name"]
     model_path = info["model_path"]
     port = info["port"]
@@ -171,7 +169,6 @@ def main():
     print(f"  脚本:  {run_sh_path}")
     print("=" * 60)
 
-    # ---- 清理旧日志 ----
     for d in ["outputs", "prec_logs", "speed_logs"]:
         p = SCRIPT_DIR / d
         if p.exists():
@@ -179,69 +176,61 @@ def main():
             print(f"已清理: {d}")
 
     # ---- Step 1: 启动 vLLM ----
-    print("\n[1/5] 启动 vLLM 服务 ...")
-    log_file = SCRIPT_DIR / f"vllm_serve.log"
+    print("\n[1/4] 启动 vLLM 服务 ...")
+    log_file = SCRIPT_DIR / "vllm_serve.log"
     with open(log_file, "w") as log_f:
         proc = subprocess.Popen(
             ["bash", run_sh_path],
             stdout=log_f,
             stderr=subprocess.STDOUT,
-            cwd=str(Path(run_sh_path).parent),
-            start_new_session=True,
+            preexec_fn=os.setsid,
         )
-
     try:
         wait_service(host, port)
-
-        # ---- Step 2: 精度测试 ----
-        print("\n[2/5] 精度测试 ...")
-        run_cmd([
-            "bash", str(SCRIPT_DIR / "prec.sh"),
-            model_name, host, str(port),
-        ])
-
-        # ---- Step 2.5: 精度对比 ----
-        prec_dir = find_latest_log(f"prec_logs/{model_name}_*")
-        if prec_dir:
-            results = parse_precision_dir(str(prec_dir))
-            out = json.dumps(results, ensure_ascii=False, indent=2)
-            print(out)
-            (SCRIPT_DIR / "precision_result.json").write_text(out, encoding="utf-8")
-            compare_precision(model_name, results)
-        else:
-            raise RuntimeError("未找到精度日志目录")
-
-        # ---- Step 3: 性能测试 ----
-        print("\n[3/5] 性能测试 ...")
-        run_cmd([
-            "bash", str(SCRIPT_DIR / "speed.sh"),
-            model_name, model_path, host, str(port),
-        ])
-
+        print(f"服务日志: {log_file}")
     except Exception:
-        if not keep_service:
-            print("\n!!! 测试失败，停止 vLLM 服务 ...")
-            stop_service(proc)
+        stop_service(proc)
         raise
 
-    # ---- Step 4: 停止服务 ----
-    if not keep_service:
-        print("\n[4/5] 停止 vLLM 服务 ...")
+    # ---- Step 2: 精度测试 ----
+    print("\n[2/4] 精度测试 ...")
+    if model_name == "OneGenomeRice":
+        result = epi_eval.run_eval(host=host, port=port, data_dir="/nvmedata/application/juzh/RiceBenchmark")
+        prec_results = {"RiceBenchmark": result["RiceBenchmark"]}
+    else:
+        prec_sh = SCRIPT_DIR / "prec.sh"
+        run_cmd(["bash", str(prec_sh), model_name, host, str(port)])
+        prec_log = find_latest_log(f"prec_logs/{model_name}_*")
+        if prec_log:
+            prec_results = parse_precision_dir(str(prec_log))
+            print(f"精度结果: {json.dumps(prec_results, indent=2)}")
+        else:
+            prec_results = {}
+            print("警告: 未找到精度日志目录")
+
+    # ---- Step 3: 精度对比 ----
+    if prec_results:
+        compare_precision(model_name, prec_results)
+
+    # ---- Step 4: 性能测试 ----
+    print("\n[3/4] 性能测试 ...")
+    speed_sh = SCRIPT_DIR / "speed.sh"
+    run_cmd(["bash", str(speed_sh), model_name, model_path, host, str(port)])
+
+    # ---- Step 5: 提取性能结果 ----
+    speed_log = find_latest_log(f"speed_logs/{model_name}_*")
+    if speed_log:
+        speed_results = parse_performance_dir(str(speed_log))
+        print(f"性能结果: {json.dumps(speed_results, indent=2)}")
+    else:
+        print("警告: 未找到性能日志目录")
+
+    # ---- 停止服务 / 保留 ----
+    if keep_service:
+        print(f"\n[4/4] 保留 vLLM 服务运行中 ({host}:{port})，PID: {proc.pid}")
+    else:
+        print("\n[4/4] 停止 vLLM 服务 ...")
         stop_service(proc)
-    else:
-        print("\n[4/5] 保留 vLLM 服务 (--keep-service)")
-
-    # ---- Step 5: 提取结果 ----
-    print("\n[5/5] 提取结果 ...")
-
-    speed_dir = find_latest_log(f"speed_logs/{model_name}_*")
-    if speed_dir:
-        results = parse_performance_dir(str(speed_dir))
-        out = json.dumps(results, ensure_ascii=False, indent=2)
-        print(out)
-        (SCRIPT_DIR / "performance_result.json").write_text(out, encoding="utf-8")
-    else:
-        raise RuntimeError("未找到性能日志目录")
 
     print("\n===== CI 完成 =====")
 
