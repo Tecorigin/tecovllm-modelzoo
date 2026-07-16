@@ -113,8 +113,8 @@ case "$MODEL_NAME" in
         ;;
     OneGenomeRice)
         run_text "T1_bs32_in1024_out100"    1024   100  32   320  || rc=1
-        run_text "T2_bs1_in32768_out100"  23768   100  1   10  || rc=1
-        run_text "T3_bs1_in10240_out100" 10240  100  1   10  || rc=1
+        run_text "T2_bs1_in32768_out100"  23768   100  1   20  || rc=1
+        run_text "T3_bs1_in10240_out100" 102400  100  1   10  || rc=1
         ;;
     *)
         echo "未知模型: ${MODEL_NAME}，使用默认文本测试"

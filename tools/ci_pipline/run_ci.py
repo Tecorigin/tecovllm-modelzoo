@@ -62,7 +62,18 @@ def parse_run_sh(path: str) -> dict:
     if m:
         host = m.group(1)
 
-    return {"model_name": model_name, "model_path": model_path, "port": port, "host": host}
+    max_num_seqs = 256
+    m = re.search(r"--max-num-seqs\s+(\d+)", content)
+    if m:
+        max_num_seqs = int(m.group(1))
+
+    return {
+        "model_name": model_name,
+        "model_path": model_path,
+        "port": port,
+        "host": host,
+        "max_num_seqs": max_num_seqs,
+    }
 
 
 def wait_service(host: str, port: int, timeout: int = 600) -> bool:
@@ -157,6 +168,7 @@ def main():
     model_path = info["model_path"]
     port = info["port"]
     host = info["host"]
+    max_num_seqs = info["max_num_seqs"]
 
     if not model_path:
         print("错误: run.sh 中未找到 vllm serve <模型路径>", file=sys.stderr)
@@ -195,7 +207,7 @@ def main():
     # ---- Step 2: 精度测试 ----
     print("\n[2/4] 精度测试 ...")
     if model_name == "OneGenomeRice":
-        result = epi_eval.run_eval(host=host, port=port, data_dir="/nvmedata/application/juzh/RiceBenchmark")
+        result = epi_eval.run_eval(host=host, port=port, data_dir="/nvmedata/application/juzh/RiceBenchmark", workers=max_num_seqs)
         prec_results = {"RiceBenchmark": result["RiceBenchmark"]}
     else:
         prec_sh = SCRIPT_DIR / "prec.sh"
@@ -222,6 +234,9 @@ def main():
     if speed_log:
         speed_results = parse_performance_dir(str(speed_log))
         print(f"性能结果: {json.dumps(speed_results, indent=2)}")
+        perf_file = Path.cwd() / f"performance_{model_name}.json"
+        perf_file.write_text(json.dumps(speed_results, indent=2, ensure_ascii=False))
+        print(f"性能结果已保存至: {perf_file}")
     else:
         print("警告: 未找到性能日志目录")
 
