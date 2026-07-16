@@ -156,7 +156,7 @@ def compare_precision(model_name: str, results: dict) -> None:
 # ============================================================
 def main():
     parser = argparse.ArgumentParser(description="CI 自动化：起服务 → 精度 → 性能 → 提取结果")
-    parser.add_argument("run_sh", help="启动 vLLM 服务的脚本路径")
+    parser.add_argument("--run_sh", default="./run_OneGenomeRice.sh", help="启动 vLLM 服务的脚本路径")
     parser.add_argument("--keep-service", action="store_true", help="测试完成后保留 vLLM 服务不关闭")
     args = parser.parse_args()
 

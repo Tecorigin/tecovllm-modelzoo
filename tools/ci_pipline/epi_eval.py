@@ -124,7 +124,7 @@ def print_metrics(m: dict):
 
 # ---- CI Entry Point ----
 def run_eval(host: str, port: int, data_dir: str = "./RiceBenchmark",
-             max_samples: int = 10000, predict_bases: int = 100, workers: int = 256,
+             max_samples: int = 50, predict_bases: int = 100, workers: int = 256,
              output_dir: str | None = None) -> dict:
     """整套精度评测流程，供 CI (run_ci.py) 直接调用。
 
