@@ -107,7 +107,9 @@ rc=0
 # ============================================================
 case "$MODEL_NAME" in
     OneGenomeRice)
-        run_text "T2_in32768_out100"  32768   100  1   20  || rc=1
+        run_text "T2_in32768_out100"  16384   100  1   20  || rc=1
+        run_text "T2_in32768_out100"  32768   100  1   10  || rc=1
+        run_text "T2_in32768_out100"  65536   100  1   10  || rc=1
         run_text "T4_in102400_out100" 102400  100  1   10  || rc=1
         ;;
     *)
