@@ -17,7 +17,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-from result_analyse import parse_precision_dir, parse_performance_dir
+from result_analyse import parse_precision_dir, parse_performance_dir, calculate_performance_score
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -229,13 +229,14 @@ def main():
     speed_sh = SCRIPT_DIR / "speed.sh"
     run_cmd(["bash", str(speed_sh), model_name, model_path, host, str(port)])
 
-    # ---- Step 5: 提取性能结果 ----
+    # ---- Step 5: 提取性能结果并计算得分 ----
     speed_log = find_latest_log(f"speed_logs/{model_name}_*")
     if speed_log:
         speed_results = parse_performance_dir(str(speed_log))
-        print(f"性能结果: {json.dumps(speed_results, indent=2)}")
+        score_results = calculate_performance_score(model_name, speed_results)
+        print(f"性能结果: {json.dumps(score_results, indent=2, ensure_ascii=False)}")
         perf_file = Path.cwd() / f"performance_{model_name}.json"
-        perf_file.write_text(json.dumps(speed_results, indent=2, ensure_ascii=False))
+        perf_file.write_text(json.dumps(score_results, indent=2, ensure_ascii=False))
         print(f"性能结果已保存至: {perf_file}")
     else:
         print("警告: 未找到性能日志目录")

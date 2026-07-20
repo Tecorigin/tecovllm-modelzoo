@@ -86,44 +86,56 @@ def parse_precision_dir(log_dir: str) -> dict:
 # ============================================================
 
 def parse_performance(log_file: str) -> dict:
-    """从单个性能 log 中提取 TTFT(ms)、TPOT(ms)，校验 Failed=0。"""
+    """从单个性能 log 的 Per-Request Metrics 表格中提取 TTFT (ms) 和 TPOT (ms) 的 p50 值。"""
     content = Path(log_file).read_text(encoding="utf-8")
 
-    # 定位 Benchmarking summary
-    idx = content.find("Benchmarking summary:")
+    # 定位 Per-Request Metrics 表格
+    idx = content.find("Per-Request Metrics")
     if idx == -1:
-        raise ValueError(f"未在 {log_file} 中找到 Benchmarking summary")
+        raise ValueError(f"未在 {log_file} 中找到 Per-Request Metrics")
 
     section = content[idx:]
-    ttft = tpot = None
-    total = success = failed = None
+    lines = section.split("\n")
 
-    for line in section.split("\n"):
-        line = line.strip()
-        if not line:
+    p50_col = -1
+    metric_col = -1
+    header_found = False
+
+    ttft_p50 = None
+    tpot_p50 = None
+
+    for line in lines:
+        # 跳过表格边框线（┏━┳┓ ┡━╇┩ └━┴┘ 等）
+        if any(ch in line for ch in "┏┳┓┡┩└┴┘╇╊╉"):
             continue
-        if ttft is None and "TTFT (ms)" in line:
-            ttft = _extract_value(line)
-        elif tpot is None and "TPOT (ms)" in line:
-            tpot = _extract_value(line)
-        elif "Total / Success / Failed" in line:
-            total, success, failed = _extract_total_success_failed(line)
-        if ttft is not None and tpot is not None and failed is not None:
-            break
 
-    if ttft is None:
-        raise ValueError(f"未在 {log_file} 中找到 TTFT (ms)")
-    if tpot is None:
-        raise ValueError(f"未在 {log_file} 中找到 TPOT (ms)")
-    if failed is None:
-        raise ValueError(f"未在 {log_file} 中找到 Total / Success / Failed")
+        # 识别表头行（用 ┃ 分隔）
+        if not header_found and "┃" in line:
+            cols = [c.strip() for c in line.split("┃")]
+            for i, c in enumerate(cols):
+                if c == "p50":
+                    p50_col = i
+                elif c == "Metric":
+                    metric_col = i
+            header_found = True
+            continue
 
-    if failed != 0:
-        raise ValueError(f"{log_file} 存在 {failed} 条失败请求")
-    if total != success:
-        raise ValueError(f"{log_file} Total({total}) != Success({success})")
+        # 解析数据行（用 │ 分隔）
+        if header_found and "│" in line:
+            cols = [c.strip() for c in line.split("│")]
+            if metric_col < len(cols) and p50_col < len(cols):
+                metric = cols[metric_col]
+                if metric == "TTFT (ms)" and ttft_p50 is None:
+                    ttft_p50 = float(cols[p50_col])
+                elif metric == "TPOT (ms)" and tpot_p50 is None:
+                    tpot_p50 = float(cols[p50_col])
 
-    return {"ttft_ms": ttft, "tpot_ms": tpot}
+    if ttft_p50 is None:
+        raise ValueError(f"未在 {log_file} 的 Per-Request Metrics 中找到 TTFT (ms) p50")
+    if tpot_p50 is None:
+        raise ValueError(f"未在 {log_file} 的 Per-Request Metrics 中找到 TPOT (ms) p50")
+
+    return {"ttft_ms": ttft_p50, "tpot_ms": tpot_p50}
 
 
 def parse_performance_dir(log_dir: str) -> dict:
@@ -139,13 +151,112 @@ def parse_performance_dir(log_dir: str) -> dict:
 
 
 # ============================================================
+# 性能评分
+# ============================================================
+
+# 性能参考基准（B=最差基线, Best=最优参考, w=case权重）
+# 来源: doc/模型适配指南.md §4.4
+_PERFORMANCE_REF = {
+    "OneGenomeRice": {
+        "T1": {
+            "ttft": {"B": 4000.00, "Best": 3500.00},
+            "tpot": {"B": 38.00, "Best": 30.00},
+        },
+        "T2": {
+            "ttft": {"B": 15000.00, "Best": 11800.00},
+            "tpot": {"B": 38.00, "Best": 30.00},
+        },
+        "T3": {
+            "ttft": {"B": 52000.00, "Best": 40000.00},
+            "tpot": {"B": 38.00, "Best": 30.00},
+        },
+        "T4": {
+            "ttft": {"B": 130000.00, "Best": 94000.00},
+            "tpot": {"B": 38.00, "Best": 30.00},
+        },
+    }
+}
+
+_W = 0.25  # 每个 case 的权重
+_MAX_PER_METRIC = _W * 25  # 单项指标最高得分 = 6.25
+
+
+def calculate_performance_score(model_name: str, results: dict) -> dict:
+    """根据公式计算性能得分。
+
+    Score_i,M = (B_i,M - Actual_i,M) / (B_i,M - Best_i,M) × w_i × 25
+
+    返回:
+        {
+            "cases": {
+                "T1_in32768_out100": {
+                    "ttft_ms": 3662.7, "tpot_ms": 23.9,
+                    "ttft_score": 6.25, "tpot_score": 6.25,
+                    "case_total": 12.50
+                },
+                ...
+            },
+            "total_score": 50.00,
+            "max_score": 50.00
+        }
+    """
+    ref = _PERFORMANCE_REF.get(model_name)
+    if not ref:
+        raise ValueError(f"未找到模型 {model_name} 的性能参考数据")
+
+    total_score = 0.0
+    enriched_cases = {}
+
+    for case_key, metrics in results.items():
+        case_id = case_key.split("_")[0]  # "T1_in32768_out100" -> "T1"
+        case_ref = ref.get(case_id)
+        if not case_ref:
+            print(f"⚠️  警告: 未找到 {case_id} 的参考数据，跳过 {case_key}")
+            enriched_cases[case_key] = {**metrics}
+            continue
+
+        case_data = {**metrics}  # 保留原始指标
+        case_sum = 0.0
+
+        for metric in ("ttft", "tpot"):
+            key = f"{metric}_ms"
+            actual = metrics.get(key)
+            if actual is None:
+                continue
+
+            b = case_ref[metric]["B"]
+            best = case_ref[metric]["Best"]
+
+            score = (b - actual) / (b - best) * _MAX_PER_METRIC
+            score = min(score, _MAX_PER_METRIC)  # 封顶
+            score = max(score, 0)                 # 保底
+            score = round(score, 4)
+
+            case_data[f"{metric}_score"] = score
+            case_sum += score
+
+        case_sum = round(case_sum, 4)
+        case_data["case_total"] = case_sum
+        total_score += case_sum
+        enriched_cases[case_key] = case_data
+
+    total_score = round(total_score, 4)
+    max_score = len(ref) * 2 * _MAX_PER_METRIC
+
+    return {
+        "cases": enriched_cases,
+        "total_score": total_score,
+        "max_score": max_score,
+    }
+
+
+# ============================================================
 # 辅助
 # ============================================================
 
 def _extract_value(line: str) -> float:
     """从 │ Label │ 123.45 │ 中提取数值"""
     cols = [c.strip() for c in line.split("│")]
-    # 取最后一个非空纯数字列
     for c in reversed(cols):
         try:
             return float(c)
@@ -172,16 +283,20 @@ if __name__ == "__main__":
     import json
 
     if len(sys.argv) < 2:
-        print("用法: python result_analyse.py <log_dir> [prec|perf]", file=sys.stderr)
+        print("用法: python result_analyse.py <log_dir> [prec|perf|score] [model_name]", file=sys.stderr)
         sys.exit(1)
 
     log_dir = sys.argv[1]
     mode = sys.argv[2] if len(sys.argv) > 2 else "prec"
+    model_name = sys.argv[3] if len(sys.argv) > 3 else "OneGenomeRice"
 
     if mode == "prec":
         results = parse_precision_dir(log_dir)
     elif mode == "perf":
         results = parse_performance_dir(log_dir)
+    elif mode == "score":
+        perf_results = parse_performance_dir(log_dir)
+        results = calculate_performance_score(model_name, perf_results)
     else:
         print(f"未知模式: {mode}", file=sys.stderr)
         sys.exit(1)

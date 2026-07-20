@@ -10,6 +10,6 @@ vllm serve /tecogpfs/models/zhejianglab/OneGenomeRice \
     --trust-remote-code \
     --tensor-parallel-size 4 \
     --port 8222 \
-    --max-num-seqs 32 \
+    --max-num-seqs 128 \
     --served-model-name OneGenomeRice \
     --no-enable-prefix-caching
