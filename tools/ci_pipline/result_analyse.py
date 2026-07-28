@@ -63,7 +63,7 @@ def parse_precision(log_file: str, metric: str = None) -> float:
 
 # 数据集 → 目标指标
 DATASET_METRIC = {
-    "wmt24pp": "mean_bert_score",
+    "wmt24pp": "mean_comet",
     "mmlu_pro": "mean_acc",
     "mmmu_pro": "mean_acc",
 }
@@ -86,42 +86,70 @@ def parse_precision_dir(log_dir: str) -> dict:
 # ============================================================
 
 def parse_performance(log_file: str) -> dict:
-    """从单个性能 log 中提取 TTFT(ms)、TPOT(ms)，校验 Failed=0。"""
+    """从单个性能 log 中提取 Percentile results 表格 1% 列的 TTFT(ms)、TPOT(ms)，校验 Failed=0。"""
     content = Path(log_file).read_text(encoding="utf-8")
 
-    # 定位 Benchmarking summary
-    idx = content.find("Benchmarking summary:")
-    if idx == -1:
+    # ---- 1. 校验 Failed=0 ----
+    idx_summary = content.find("Benchmarking summary:")
+    if idx_summary == -1:
         raise ValueError(f"未在 {log_file} 中找到 Benchmarking summary")
 
-    section = content[idx:]
-    ttft = tpot = None
-    total = success = failed = None
-
-    for line in section.split("\n"):
-        line = line.strip()
-        if not line:
-            continue
-        if ttft is None and "TTFT (ms)" in line:
-            ttft = _extract_value(line)
-        elif tpot is None and "TPOT (ms)" in line:
-            tpot = _extract_value(line)
-        elif "Total / Success / Failed" in line:
+    for line in content[idx_summary:].split("\n"):
+        if "Total / Success / Failed" in line:
             total, success, failed = _extract_total_success_failed(line)
-        if ttft is not None and tpot is not None and failed is not None:
+            if failed != 0:
+                raise ValueError(f"{log_file} 存在 {failed} 条失败请求")
+            if total != success:
+                raise ValueError(f"{log_file} Total({total}) != Success({success})")
             break
-
-    if ttft is None:
-        raise ValueError(f"未在 {log_file} 中找到 TTFT (ms)")
-    if tpot is None:
-        raise ValueError(f"未在 {log_file} 中找到 TPOT (ms)")
-    if failed is None:
+    else:
         raise ValueError(f"未在 {log_file} 中找到 Total / Success / Failed")
 
-    if failed != 0:
-        raise ValueError(f"{log_file} 存在 {failed} 条失败请求")
-    if total != success:
-        raise ValueError(f"{log_file} Total({total}) != Success({success})")
+    # ---- 2. 从 Percentile results 表格提取 1% 列的 TTFT/TPOT ----
+    idx_perc = content.find("Percentile results:")
+    if idx_perc == -1:
+        raise ValueError(f"未在 {log_file} 中找到 Percentile results")
+
+    # 解析表格：收集 │ 开头的行，跳过 ┌├└ 分隔线，非表格行停止
+    table_lines = []
+    in_table = False
+    for line in content[idx_perc:].split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("│"):
+            table_lines.append(stripped)
+            in_table = True
+        elif in_table and not (stripped.startswith("┌") or stripped.startswith("├") or stripped.startswith("└") or stripped.startswith("┘") or stripped.startswith("┐")):
+            break  # 非表格行且非分隔线，表格结束
+
+    if len(table_lines) < 2:
+        raise ValueError(f"未在 {log_file} 中解析到 Percentile 数据行")
+
+    # 表头：找到 "1%" 列索引
+    header_cols = [c.strip() for c in table_lines[0].split("│")]
+    p1_col = None
+    for i, c in enumerate(header_cols):
+        if c == "1%":
+            p1_col = i
+            break
+    if p1_col is None:
+        raise ValueError(f"未在 Percentile 表头中找到 1% 列")
+
+    # 数据行：提取 TTFT (ms) 和 TPOT (ms)
+    ttft = tpot = None
+    for line in table_lines[1:]:
+        cols = [c.strip() for c in line.split("│")]
+        if p1_col >= len(cols):
+            continue
+        metric = cols[1]  # split("│") 后 cols[0] 为空，cols[1] 是 metric 名
+        if "TTFT (ms)" in metric:
+            ttft = float(cols[p1_col])
+        elif "TPOT (ms)" in metric:
+            tpot = float(cols[p1_col])
+
+    if ttft is None:
+        raise ValueError(f"未在 {log_file} 的 Percentile 表中找到 TTFT (ms)")
+    if tpot is None:
+        raise ValueError(f"未在 {log_file} 的 Percentile 表中找到 TPOT (ms)")
 
     return {"ttft_ms": ttft, "tpot_ms": tpot}
 

@@ -70,7 +70,7 @@ rc=0
 case "$MODEL_NAME" in
     Hy-MT2-1.8B)
         run_eval "wmt24pp" \
-            '{"wmt24pp": {"subset_list": ["en-zh_cn"]}}' \
+            '{"wmt24pp": {"subset_list": ["en-zh_cn"], "metric_list": [{"comet": {"model_id_or_path": "evalscope/wmt22-comet-da"}}]}}' \
             'do_sample=true,temperature=0.7,top_p=0.6,top_k=20,repetition_penalty=1.05,max_tokens=1024,timeout=3600' \
             || rc=1
         ;;

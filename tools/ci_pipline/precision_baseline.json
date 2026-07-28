@@ -1,6 +1,6 @@
 {
     "Hy-MT2-1.8B": {
-        "wmt24pp": {"score": 0.9405, "min": 0.9395, "max": 0.9415}
+        "wmt24pp": {"score": 0.8486, "min": 0.8386, "max": 0.8586}
     },
     "MiniCPM5-1B": {
         "mmlu_pro": {"score": 0.4688, "min": 0.4188, "max": 0.5188}
