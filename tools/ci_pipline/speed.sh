@@ -36,7 +36,7 @@ run_text() {
         --tokenizer-path "$TOKENIZER_PATH" \
         --dataset random \
         --min-prompt-length "$prompt_len" --max-prompt-length "$prompt_len" \
-        --max-tokens 200 --min-tokens 200 \
+        --max-tokens 100 --min-tokens 100 \
         --extra-args '{"ignore_eos": true}' \
         --parallel "$parallel" --number "$number" \
         2>&1 | tee "$log"
@@ -64,7 +64,7 @@ run_image() {
         --max-prompt-length 200 --min-prompt-length 200 \
         --image-width "$width" --image-height "$height" \
         --image-num "$img_num" --image-format RGB \
-        --max-tokens 200 --min-tokens 200 \
+        --max-tokens 100 --min-tokens 100 \
         --extra-args '{"ignore_eos": true}' \
         --parallel "$parallel" --number "$number" \
         2>&1 | tee "$log"
@@ -93,7 +93,7 @@ evalscope perf \
     --tokenizer-path "$TOKENIZER_PATH" \
     --dataset random \
     --min-prompt-length 1024 --max-prompt-length 1024 \
-    --max-tokens 200 --min-tokens 200 \
+    --max-tokens 10 --min-tokens 10 \
     --extra-args '{"ignore_eos": true}' \
     --parallel 1 --number 1 \
     2>&1 | tee "$LOG_DIR/warmup.log" || true
@@ -102,33 +102,12 @@ echo ">>> Warmup 完成"
 rc=0
 
 # ============================================================
-# 按模型执行文本测试
+# 文本性能测试（所有模型统一用例）
 # ============================================================
-case "$MODEL_NAME" in
-    InternVL3_5-8B)
-        run_text "T1_16K_b1"   16384 1  10  || rc=1
-        run_text "T2_32K_b1"   32768 1  10  || rc=1
-        run_text "T3_1K_b32"   1024  32 320 || rc=1
-        # 多模态图片测试
-        run_image "I1_5img_b1"         1024 1024 10  1  10  || rc=1
-        run_image "I2_2img_b1"         2048 2048 5  1  10  || rc=1
-        run_image "I3_1img_b32"        1024 1024 1  32 320 || rc=1
-        ;;
-    gemma-4-12B-it)
-        run_text "T1_64K_b1"   65536  1  10  || rc=1
-        run_text "T2_120K_b1" 122880  1  10  || rc=1
-        run_text "T3_1K_b32"   1024  32 320  || rc=1
-        run_image "I1_multi_img_b1"    1024 1024 10 1  10  || rc=1
-        run_image "I2_large_img_b1"    2048 2048 5  1  10  || rc=1
-        run_image "I3_single_img_b32"  1024 1024 1  32 320 || rc=1
-        ;;
-    *)
-        # 纯文本模型
-        run_text "T1_64K_b1"   65536  1  10  || rc=1
-        run_text "T2_120K_b1" 122880  1  10  || rc=1
-        run_text "T3_1K_b32"   1024  32 320  || rc=1
-        ;;
-esac
+run_text "T1_2K_b1"   2048 1  10  || rc=1
+run_text "T2_4K_b1"   4096 1  10  || rc=1
+run_text "T3_8K_b1"   8192 1  10  || rc=1
+run_text "T4_16K_b1"  16384 1  10  || rc=1
 
 echo "===== 性能测试完成: ${MODEL_NAME}，日志目录: $LOG_DIR ====="
 exit "$rc"

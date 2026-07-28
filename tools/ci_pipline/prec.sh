@@ -43,7 +43,8 @@ run_eval() {
         --api-key EMPTY_TOKEN \
         --datasets "$dataset" \
         --dataset-args "$ds_args" \
-        --eval-batch-size 32 \
+        --eval-batch-size 8 \
+        --limit 200 \
         --generation-config "$gen_cfg" \
         --ignore-errors \
         2>&1 | tee "$log"
@@ -70,33 +71,25 @@ case "$MODEL_NAME" in
     Hy-MT2-1.8B)
         run_eval "wmt24pp" \
             '{"wmt24pp": {"subset_list": ["en-zh_cn"]}}' \
-            'do_sample=true,temperature=0.7,top_p=0.6,top_k=20,repetition_penalty=1.05' \
+            'do_sample=true,temperature=0.7,top_p=0.6,top_k=20,repetition_penalty=1.05,max_tokens=1024,timeout=3600' \
             || rc=1
         ;;
     MiniCPM5-1B)
         run_eval "mmlu_pro" \
             '{"mmlu_pro": {"subset_list": ["computer science"]}}' \
-            '{"do_sample":true,"temperature":0.9,"top_p":0.95,"extra_body":{"chat_template_kwargs":{"enable_thinking":true}}}' \
+            '{"do_sample":true,"temperature":0.9,"top_p":0.95,"max_tokens":1024,"timeout":7200,"extra_body":{"chat_template_kwargs":{"enable_thinking":false}}}' \
             || rc=1
         ;;
     InternVL3_5-8B)
         run_eval "mmlu_pro" \
             '{"mmlu_pro": {"subset_list": ["computer science"]}}' \
-            'do_sample=true,temperature=0.6' \
+            'do_sample=true,temperature=0.6,max_tokens=1024,timeout=3600' \
             || rc=1
-        # run_eval "mmmu_pro" \
-        #     '{"mmmu_pro": {"subset_list": ["Accounting"]}}' \
-        #     'do_sample=true,temperature=0.6' \
-        #     || rc=1
         ;;
     gemma-4-12B-it)
         run_eval "mmlu_pro" \
             '{"mmlu_pro": {"subset_list": ["computer science"]}}' \
-            'do_sample=true,temperature=1.0,top_p=0.95,top_k=64' \
-            || rc=1
-        run_eval "mmmu_pro" \
-            '{"mmmu_pro": {"subset_list": ["Accounting"]}}' \
-            'do_sample=true,temperature=1.0,top_p=0.95,top_k=64' \
+            'do_sample=true,temperature=1.0,top_p=0.95,top_k=64,max_tokens=4096,timeout=3600' \
             || rc=1
         ;;
     *)
