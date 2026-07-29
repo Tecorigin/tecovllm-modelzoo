@@ -6,11 +6,9 @@
         "mmlu_pro": {"score": 0.4688, "min": 0.4188, "max": 0.5188}
     },
     "InternVL3_5-8B": {
-        "mmlu_pro": {"score": 0.6910, "min": 0.6410, "max": 0.7410},
-        "mmmu_pro": {"score": 0.4862, "min": 0.3862, "max": 0.5862}
+        "mmlu_pro": {"score": 0.655, "min": 0.605, "max": 0.705}
     },
     "gemma-4-12B-it": {
-        "mmlu_pro": {"score": 0.8458, "min": 0.7958, "max": 0.8958},
-        "mmmu_pro": {"score": 0.7500, "min": 0.6500, "max": 0.8500}
+        "mmlu_pro": {"score": 0.8300, "min": 0.7800, "max": 0.8800}
     }
 }

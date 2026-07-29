@@ -89,7 +89,7 @@ case "$MODEL_NAME" in
     gemma-4-12B-it)
         run_eval "mmlu_pro" \
             '{"mmlu_pro": {"subset_list": ["computer science"]}}' \
-            'do_sample=true,temperature=1.0,top_p=0.95,top_k=64,max_tokens=4096,timeout=3600' \
+            '{"do_sample":true,"temperature":1.0,"top_p":0.95,"top_k":64,"max_tokens":1024,"timeout":7200,"extra_body":{"chat_template_kwargs":{"enable_thinking":true}}}' \
             || rc=1
         ;;
     *)
