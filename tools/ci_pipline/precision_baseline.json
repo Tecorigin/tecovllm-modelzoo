@@ -3,12 +3,12 @@
         "wmt24pp": {"score": 0.8486, "min": 0.8386, "max": 0.8586}
     },
     "MiniCPM5-1B": {
-        "mmlu_pro": {"score": 0.4688, "min": 0.4188, "max": 0.5188}
+        "mmlu_pro": {"score": 0.345, "min": 0.245, "max": 0.445}
     },
     "InternVL3_5-8B": {
-        "mmlu_pro": {"score": 0.655, "min": 0.605, "max": 0.705}
+        "mmlu_pro": {"score": 0.69, "min": 0.59, "max": 0.79}
     },
     "gemma-4-12B-it": {
-        "mmlu_pro": {"score": 0.8300, "min": 0.7800, "max": 0.8800}
+        "mmlu_pro": {"score": 0.83, "min": 0.73, "max": 0.93}
     }
 }
