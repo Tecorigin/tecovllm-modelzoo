@@ -90,9 +90,9 @@ def parse_performance(log_file: str) -> dict:
     content = Path(log_file).read_text(encoding="utf-8")
 
     # 定位 Per-Request Metrics 表格
-    idx = content.find("Per-Request Metrics")
+    idx = content.find("Percentile results:")
     if idx == -1:
-        raise ValueError(f"未在 {log_file} 中找到 Per-Request Metrics")
+        raise ValueError(f"未在 {log_file} 中找到 Percentile results:")
 
     section = content[idx:]
     lines = section.split("\n")
@@ -113,7 +113,7 @@ def parse_performance(log_file: str) -> dict:
         if not header_found and "┃" in line:
             cols = [c.strip() for c in line.split("┃")]
             for i, c in enumerate(cols):
-                if c == "p50":
+                if c == "1%":
                     p50_col = i
                 elif c == "Metric":
                     metric_col = i
