@@ -207,7 +207,7 @@ def main():
     # ---- Step 2: 精度测试 ----
     print("\n[2/4] 精度测试 ...")
     if model_name == "OneGenomeRice":
-        result = epi_eval.run_eval(host=host, port=port, data_dir="/nvmedata/application/juzh/RiceBenchmark", workers=max_num_seqs)
+        result = epi_eval.run_eval(host=host, port=port, data_dir="/nvmedata/application/juzh/RiceBenchmark", workers=32)
         prec_results = {"RiceBenchmark": result["RiceBenchmark"]}
     else:
         prec_sh = SCRIPT_DIR / "prec.sh"

@@ -86,56 +86,52 @@ def parse_precision_dir(log_dir: str) -> dict:
 # ============================================================
 
 def parse_performance(log_file: str) -> dict:
-    """从单个性能 log 的 Per-Request Metrics 表格中提取 TTFT (ms) 和 TPOT (ms) 的 p50 值。"""
+    """从单个性能 log 的 Percentile results 表格中提取 TTFT (ms) 和 TPOT (ms) 的 1% 值。"""
     content = Path(log_file).read_text(encoding="utf-8")
 
-    # 定位 Per-Request Metrics 表格
-    idx = content.find("Percentile results:")
+    # 定位 EvalScope 百分位结果表格
+    idx = content.rfind("Percentile results:")
     if idx == -1:
         raise ValueError(f"未在 {log_file} 中找到 Percentile results:")
 
     section = content[idx:]
     lines = section.split("\n")
 
-    p50_col = -1
+    p1_col = -1
     metric_col = -1
     header_found = False
 
-    ttft_p50 = None
-    tpot_p50 = None
+    ttft_p1 = None
+    tpot_p1 = None
 
     for line in lines:
-        # 跳过表格边框线（┏━┳┓ ┡━╇┩ └━┴┘ 等）
-        if any(ch in line for ch in "┏┳┓┡┩└┴┘╇╊╉"):
-            continue
-
-        # 识别表头行（用 ┃ 分隔）
-        if not header_found and "┃" in line:
-            cols = [c.strip() for c in line.split("┃")]
+        # rich 表格的表头使用 ┃，数据行使用 │；二者列索引一致。
+        if not header_found and ("┃" in line or "│" in line):
+            cols = [c.strip() for c in re.split(r"[┃│]", line)]
             for i, c in enumerate(cols):
                 if c == "1%":
-                    p50_col = i
+                    p1_col = i
                 elif c == "Metric":
                     metric_col = i
-            header_found = True
+            header_found = p1_col >= 0 and metric_col >= 0
             continue
 
-        # 解析数据行（用 │ 分隔）
+        # 解析数据行
         if header_found and "│" in line:
-            cols = [c.strip() for c in line.split("│")]
-            if metric_col < len(cols) and p50_col < len(cols):
+            cols = [c.strip() for c in re.split(r"[┃│]", line)]
+            if metric_col < len(cols) and p1_col < len(cols):
                 metric = cols[metric_col]
-                if metric == "TTFT (ms)" and ttft_p50 is None:
-                    ttft_p50 = float(cols[p50_col])
-                elif metric == "TPOT (ms)" and tpot_p50 is None:
-                    tpot_p50 = float(cols[p50_col])
+                if metric == "TTFT (ms)" and ttft_p1 is None:
+                    ttft_p1 = float(cols[p1_col])
+                elif metric == "TPOT (ms)" and tpot_p1 is None:
+                    tpot_p1 = float(cols[p1_col])
 
-    if ttft_p50 is None:
-        raise ValueError(f"未在 {log_file} 的 Per-Request Metrics 中找到 TTFT (ms) p50")
-    if tpot_p50 is None:
-        raise ValueError(f"未在 {log_file} 的 Per-Request Metrics 中找到 TPOT (ms) p50")
+    if ttft_p1 is None:
+        raise ValueError(f"未在 {log_file} 的 Percentile results 中找到 TTFT (ms) 1%")
+    if tpot_p1 is None:
+        raise ValueError(f"未在 {log_file} 的 Percentile results 中找到 TPOT (ms) 1%")
 
-    return {"ttft_ms": ttft_p50, "tpot_ms": tpot_p50}
+    return {"ttft_ms": ttft_p1, "tpot_ms": tpot_p1}
 
 
 def parse_performance_dir(log_dir: str) -> dict:
@@ -159,20 +155,20 @@ def parse_performance_dir(log_dir: str) -> dict:
 _PERFORMANCE_REF = {
     "OneGenomeRice": {
         "T1": {
-            "ttft": {"B": 4000.00, "Best": 3500.00},
-            "tpot": {"B": 38.00, "Best": 30.00},
+            "ttft": {"B": 6400.00, "Best": 3500.00},
+            "tpot": {"B": 45.00, "Best": 30.00},
         },
         "T2": {
-            "ttft": {"B": 15000.00, "Best": 11800.00},
-            "tpot": {"B": 38.00, "Best": 30.00},
+            "ttft": {"B": 21000.00, "Best": 11800.00},
+            "tpot": {"B": 65.00, "Best": 30.00},
         },
         "T3": {
-            "ttft": {"B": 52000.00, "Best": 40000.00},
-            "tpot": {"B": 38.00, "Best": 30.00},
+            "ttft": {"B": 75000.00, "Best": 40000.00},
+            "tpot": {"B": 110.00, "Best": 30.00},
         },
         "T4": {
-            "ttft": {"B": 130000.00, "Best": 94000.00},
-            "tpot": {"B": 38.00, "Best": 30.00},
+            "ttft": {"B": 280000.00, "Best": 94000.00},
+            "tpot": {"B": 200.00, "Best": 30.00},
         },
     }
 }

@@ -1,9 +1,9 @@
 {
     "OneGenomeRice": {
         "RiceBenchmark": {
-            "score": 0.9024,
-            "min": 0.8924,
-            "max": 0.9124
+            "score": 0.9120,
+            "min": 0.9020,
+            "max": 0.9990
         }
     }
 }

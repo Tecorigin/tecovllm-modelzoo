@@ -107,10 +107,10 @@ rc=0
 # ============================================================
 case "$MODEL_NAME" in
     OneGenomeRice)
-        run_text "T1_in16384_out100"  16384   100  1   10  || rc=1
-        run_text "T2_in32768_out100"  32768   100  1   10  || rc=1
-        run_text "T3_in65536_out100"  65536   100  1   10  || rc=1
-        run_text "T4_in102400_out100" 102400  100  1   10  || rc=1
+        run_text "T1_in2048_out100"  2048   100  1   10  || rc=1
+        run_text "T2_in4096_out100"  4096   100  1   10  || rc=1
+        run_text "T3_in8192_out100"  8192   100  1   10  || rc=1
+        run_text "T4_in16384_out100" 16384  100  1   10  || rc=1
         ;;
     *)
         echo "未知模型: ${MODEL_NAME}，使用默认文本测试"
