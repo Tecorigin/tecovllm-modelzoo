@@ -155,20 +155,20 @@ def parse_performance_dir(log_dir: str) -> dict:
 _PERFORMANCE_REF = {
     "OneGenomeRice": {
         "T1": {
-            "ttft": {"B": 6400.00, "Best": 150},
-            "tpot": {"B": 45.00, "Best": 31.00},
+            "ttft": {"B": 6400.00, "Best": 130},
+            "tpot": {"B": 45.00, "Best": 30.00},
         },
         "T2": {
-            "ttft": {"B": 21000.00, "Best": 390},
-            "tpot": {"B": 65.00, "Best": 31.00},
+            "ttft": {"B": 21000.00, "Best": 370},
+            "tpot": {"B": 65.00, "Best": 30.00},
         },
         "T3": {
-            "ttft": {"B": 75000.00, "Best": 1100.00},
-            "tpot": {"B": 110.00, "Best": 31.00},
+            "ttft": {"B": 75000.00, "Best": 1000.00},
+            "tpot": {"B": 110.00, "Best": 30.00},
         },
         "T4": {
-            "ttft": {"B": 280000.00, "Best": 3600.00},
-            "tpot": {"B": 200.00, "Best": 31.00},
+            "ttft": {"B": 280000.00, "Best": 3400.00},
+            "tpot": {"B": 200.00, "Best": 30.00},
         },
     }
 }
