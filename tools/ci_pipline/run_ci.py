@@ -43,6 +43,9 @@ def parse_run_sh(path: str) -> dict:
             f"--served-model-name 必须为 {SUPPORTED_MODELS}，实际: {model_name}"
         )
 
+    if "--no-enable-prefix-caching" not in active:
+        raise ValueError("run.sh 中必须包含 --no-enable-prefix-caching")
+
     model_path = None
     m = re.search(r"vllm\s+serve\s+(\S+)", content)
     if m:
