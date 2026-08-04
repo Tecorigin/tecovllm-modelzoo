@@ -122,31 +122,4 @@ Python 代码请遵循 [PEP8](https://peps.python.org/pep-0008/) 规范。提交
 
 ## 2. 提交 PR
 
-基于您 fork 的 TecovLLM-ModelZoo 仓库，新建 Pull Request 提交内容。关于如何 fork 仓库及提交 PR，请查阅 GitHub 官方文档：[About pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests)。
-
-### 2.1 目标分支
-
-选择目标分支为：`tecorigin/tecovllm-modelzoo:main`。
-
-### 2.2 PR 标题
-
-标题需标注开发者及适配内容，格式如下：
-
-```
-【生态活动】元碁智汇·定义未来 - {团队名称} - 模型推理 - {模型名称}
-```
-
-> **示例**：`【生态活动】元碁智汇·定义未来 - 某某团队 - 模型推理 - 适配Seed-OSS-36B-Instruct模型`
-
-### 2.3 PR 说明
-
-PR 说明中应包含以下内容：
-
-| 信息项 | 说明 |
-|--------|------|
-| **软件栈版本** | 在 Docker 环境中执行 `vllm` 命令，以截图方式提供输出的软件版本信息 |
-| **源码参考** | 提供源码参考链接及对应的 commit id 或 tag；如无参考源码，请说明原因 |
-| **工作目录** | 适配内容的目录结构 |
-| **适配内容** | 参考 §1.1 功能实现章节，说明适配了哪些功能 |
-| **结果展示** | 包含功能实现中各验证项的测试结果（截图） |
-| **README 自测结果** | 确认 README 已通过自测，非开发者也能够按 README 复现此次 PR 的内容 |
+完成所有测试并通过后，将代码提交到 TecovLLM-ModelZoo 仓库
